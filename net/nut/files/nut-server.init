@@ -438,7 +438,9 @@ reload_service() {
 	interface_triggers "check_interface_up" || should_stop_srv=1
 
 	if [ "$should_stop_srv" != "0" ]; then
-		procd_kill nut-server upsd 2>&1 | tee | logger -t nut-server
+		if procd_running nut-server upsd >/dev/null 2>&1; then
+			procd_kill nut-server upsd 2>&1 | tee | logger -t nut-server
+		fi
 		config_foreach stop_ups_driver driver
 	fi
 
@@ -486,19 +488,23 @@ stop_ups_driver() {
 	build_ups_config  "$ups"
 
 	if [ "$haveupscfg" != "1" ]; then
-		procd_kill nut-server  "$ups" 2>&1 | tee | logger -t nut-server
+		if procd_running nut-server upsd >/dev/null 2>&1; then
+			procd_kill nut-server  "$ups" 2>&1 | tee | logger -t nut-server
+		fi
 		return 0
 	fi
 
 	config_get driver  "$ups" driver "usbhid-ups"
 
-	if procd_running nut-server  "$ups"; then
+	if procd_running nut-server "$ups"; then
 		if [ -s "${STATEPATH}/${driver}-${ups}".pid ]; then
 			/lib/nut/"${driver}" -c exit -a "${ups}" 2>&1 | tee | logger -t nut-server
 		elif pgrep "${driver}" >/dev/null 2>/dev/null; then
 			procd_send_signal nut-server "${driver}" TERM 2>&1 | tee | logger -t nut-server
 		fi
-		procd_kill nut-server  "$ups" 2>&1 | tee | logger -t nut-server
+		if procd_running nut-server upsd >/dev/null 2>&1; then
+			procd_kill nut-server "$ups" 2>&1 | tee | logger -t nut-server
+		fi
 	fi
 }
 
@@ -528,10 +534,14 @@ stop_service() {
 				elif pgrep upsd >/dev/null 2>/dev/null; then
 					procd_send_signal nut-server upsd TERM 2>&1 | tee | logger -t nut-server
 				fi
-				procd_kill nut-server upsd 2>&1 | tee | logger -t nut-server
+				if procd_running nut-server upsd >/dev/null 2>&1; then
+					procd_kill nut-server upsd 2>&1 | tee | logger -t nut-server
+				fi
 			fi
 			config_foreach stop_ups_driver driver
-			procd_kill nut-server 2>&1 | tee | logger -t nut-server
+			if procd_running nut-server upsd >/dev/null 2>&1; then
+				procd_kill nut-server 2>&1 | tee | logger -t nut-server
+			fi
 		fi
 		;;
 	*upsd*)
@@ -542,7 +552,9 @@ stop_service() {
 			elif pgrep upsd >/dev/null 2>/dev/null; then
 				procd_send_signal nut-server upsd TERM 2>&1 | tee | logger -t nut-server
 			fi
-			procd_kill nut-server upsd 2>&1 | tee | logger -t nut-server
+			if procd_running nut-server upsd >/dev/null 2>&1; then
+				procd_kill nut-server upsd 2>&1 | tee | logger -t nut-server
+			fi
 		fi
 		;;
 	*)

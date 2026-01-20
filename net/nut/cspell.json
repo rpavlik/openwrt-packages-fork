@@ -29,6 +29,8 @@
         "driverpath",
         "havedriver",
         "haveserver",
+        "havesrvcfg",
+        "haveupscfg",
         "ignorelb",
         "instcmd",
         "instcmds",
